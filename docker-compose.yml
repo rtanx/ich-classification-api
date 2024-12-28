@@ -1,0 +1,14 @@
+services:
+  ich_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ich_api
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/api
+      - ./bin/models:/api/bin/models
+      - ./tmp/files:/api/tmp/files
+    environment:
+      - PYTHONUNBUFFERED=1
