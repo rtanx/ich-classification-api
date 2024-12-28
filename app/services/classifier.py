@@ -1,31 +1,19 @@
-import os
 from io import BytesIO
 
-import anyio
 from fastapi import UploadFile
-import pydicom
 import numpy as np
 
 from app.internal.data_preprocessing import ImagePreparation
-from app.internal.classifier import ICHModel
+from app.internal.post_processing import GradCAM
 
 
-class Classifier():
-    def __init__(self, upload_dir: str):
-        self.upload_dir = upload_dir
+class ClassifierService():
 
-    async def save_file(self, file: UploadFile, chunk_size: int = 4096) -> str:
-        """Save an uploaded file to the specified directory."""
-        fpath = os.path.join(self.upload_dir, file.filename)
-        async with await anyio.open_file(fpath, "wb") as f:
-            while True:
-                chunk = await file.read(chunk_size)
-                if not chunk:
-                    break
-                await f.write(chunk)
-        return fpath
+    def __init__(self, model):
+        self.model = model
+        self.gradcam = GradCAM(self.model, 'top_conv')
 
-    async def classify_from_file_upload(self, file: UploadFile) -> str:
+    async def get_input_image(self, file: UploadFile) -> np.ndarray:
         try:
             file_content = await file.read()
             dcm_bytes = BytesIO(file_content)
@@ -33,8 +21,21 @@ class Classifier():
         except Exception as e:
             raise ValueError(f"An error occurred: {str(e)}")
 
-        y_preds = ICHModel(np.expand_dims(bsb_img, axis=0), training=False).numpy()
-        print(y_preds.squeeze())
+        return bsb_img
+
+    def classify(self, img: np.ndarray) -> np.ndarray:
+        if img.ndim != 4:
+            img = np.expand_dims(img, axis=0)
+
+        y_preds = self.model.predict(img, verbose=0)
+        return y_preds.squeeze()
+
+    def compute_gradcam(self, img: np.ndarray, original_img: np.ndarray, indices: list | np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        heatmaps = self.gradcam.generate_heatmaps(img, original_img, indices)
+        return heatmaps
+
+    def get_top_labels_indices(self, y_preds: np.ndarray, threshold: float = 0.5) -> np.ndarray:
+        return np.argwhere(y_preds > threshold).squeeze()
 
 
 # labels_map = {
