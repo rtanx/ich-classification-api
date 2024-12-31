@@ -41,6 +41,7 @@ class ProcessedImage(BaseModel):
 
 
 class ClassificationResponseUnified(BaseModel):
+    is_positive: bool
     classification: ClassificationMap
     inferences: Optional[list[Inference]] = None
     processed_image: Optional[ProcessedImage] = None

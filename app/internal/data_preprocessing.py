@@ -82,3 +82,7 @@ class ImagePreparation():
             img = cv2.resize(img, resize[:2], interpolation=cv2.INTER_LINEAR)
 
         return img.astype(np.float32)
+
+    @staticmethod
+    def read_as_sinogram_array(fp: PathType | BytesIO | ReadableBuffer, resize: Tuple[int, int] = (256, 256)):
+        pass

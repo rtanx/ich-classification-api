@@ -17,8 +17,10 @@ class ImageModelRouter:
             y_preds = self.classifier_service.classify(input_img)
 
             classification_maps = ClassificationMap.from_array(y_preds)
-            resp = ClassificationResponseUnified(classification=classification_maps)
             top_label_indices = self.classifier_service.get_top_labels_indices(y_preds)
+            is_positive = len(top_label_indices) > 0
+
+            resp = ClassificationResponseUnified(is_positive=is_positive, classification=classification_maps)
 
             inferences: list[Inference] = []
             if len(top_label_indices) > 0:
