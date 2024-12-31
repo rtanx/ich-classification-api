@@ -12,3 +12,29 @@ services:
       - ./tmp/files:/api/tmp/files
     environment:
       - PYTHONUNBUFFERED=1
+
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflare-tunnel
+    hostname: cloudflare-tunnel
+    restart: unless-stopped
+    depends_on:
+      - ich_api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+    network_mode: host
+    command: tunnel --url http://localhost:8080
+    volumes:
+      - /etc/localtime:/etc/localtime:ro              # Synchronize time with the host
+
+    healthcheck:
+      test: ["CMD", "cloudflared", "--version"]       # Check if cloudflared version command works
+      interval: 30s                                   # Time between health check attempts
+      timeout: 10s                                    # Time to wait for a response
+      retries: 3                                      # Number of retries before marking as unhealthy
+      start_period: 10s                               # Delay before health checks begin
+
